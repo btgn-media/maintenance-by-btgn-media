@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Build artifacts — GitHub Releases are the canonical archive
+/maintenance-by-btgn-media.zip
+/releases/

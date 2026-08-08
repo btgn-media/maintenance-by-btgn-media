@@ -1,0 +1,42 @@
+name: Release
+
+# Build the plugin zip and publish it as a GitHub Release whenever a v* tag is pushed.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint PHP
+        run: |
+          find maintenance-by-btgn-media -name '*.php' -print0 \
+            | xargs -0 -n1 php -l
+
+      - name: Build zip
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          SLUG=maintenance-by-btgn-media
+          mkdir -p releases
+          zip -rq "releases/${SLUG}-${VERSION}.zip" "$SLUG" -x '*.DS_Store'
+          echo "ASSET=releases/${SLUG}-${VERSION}.zip" >> "$GITHUB_ENV"
+
+      - name: Create / update release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$ASSET" \
+              --title "$GITHUB_REF_NAME" \
+              --generate-notes
+          fi
