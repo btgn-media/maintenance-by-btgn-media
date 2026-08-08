@@ -15,9 +15,11 @@ if (!defined('ABSPATH')) {
  */
 class MBTGN_Updater {
 
-    const REPO      = 'btgn-media/maintenance-by-btgn-media';
-    const CACHE_KEY = 'mbtgn_updater_release';
-    const CACHE_TTL = 21600; // 6 hours
+    const REPO       = 'btgn-media/maintenance-by-btgn-media';
+    const CACHE_KEY  = 'mbtgn_updater_release';
+    const CACHE_TTL  = 21600; // 6 hours
+    const HOMEPAGE   = 'https://github.com/btgn-media/maintenance-by-btgn-media';
+    const AUTHOR     = '<a href="https://btgn.media" target="_blank" rel="noopener">#btgn.media</a>';
 
     protected $basename;
     protected $slug;
@@ -34,8 +36,56 @@ class MBTGN_Updater {
         add_filter('http_request_args', [$self, 'auth_asset_download'], 10, 2);
         add_action('upgrader_process_complete', [$self, 'clear_cache'], 10, 2);
         add_action('admin_post_mbtgn_check_updates', [$self, 'handle_manual_check']);
+        add_filter('plugin_row_meta', [$self, 'row_meta'], 10, 2);
+        add_action('admin_enqueue_scripts', [$self, 'maybe_thickbox']);
 
         return $self;
+    }
+
+    /**
+     * Add a "View details" link (opens the info modal) and open the plugin's external
+     * row-meta links (e.g. "Visit plugin site") in a new tab. The modal link stays a modal.
+     */
+    public function row_meta($meta, $file) {
+        if ($file !== $this->basename) {
+            return $meta;
+        }
+
+        foreach ($meta as $i => $html) {
+            if (strpos($html, '<a ') !== false && strpos($html, 'thickbox') === false && strpos($html, 'target=') === false) {
+                $meta[$i] = str_replace('<a ', '<a target="_blank" rel="noopener" ', $html);
+            }
+        }
+
+        // Only add our own link if WordPress hasn't already added a details link.
+        $has_details = false;
+        foreach ($meta as $html) {
+            if (strpos($html, 'open-plugin-details-modal') !== false) {
+                $has_details = true;
+                break;
+            }
+        }
+        if (!$has_details) {
+            $meta[] = sprintf(
+                '<a href="%s" class="thickbox open-plugin-details-modal" aria-label="%s" data-title="%s">%s</a>',
+                esc_url(network_admin_url('plugin-install.php?tab=plugin-information&plugin=' . $this->slug . '&TB_iframe=true&width=772&height=788')),
+                esc_attr(sprintf(__('More information about %s'), 'Maintenance by #btgn.media')),
+                esc_attr('Maintenance by #btgn.media'),
+                __('View details')
+            );
+        }
+
+        return $meta;
+    }
+
+    /**
+     * Ensure the thickbox assets are available on the Plugins screen so the
+     * "View details" modal can open.
+     */
+    public function maybe_thickbox($hook) {
+        if ($hook === 'plugins.php') {
+            add_thickbox();
+        }
     }
 
     /**
@@ -167,18 +217,129 @@ class MBTGN_Updater {
             return $result;
         }
 
+        $readme   = $this->parse_readme($this->get_readme());
+        $sections = $readme['sections'];
+        if (empty($sections['changelog'])) {
+            $sections['changelog'] = wpautop(esc_html(isset($release['body']) ? $release['body'] : ''));
+        }
+
         return (object) [
             'name'          => 'Maintenance by #btgn.media',
             'slug'          => $this->slug,
             'version'       => $this->tag_to_version($release['tag_name']),
-            'author'        => '<a href="https://btgn.media">btgn.media</a>',
-            'homepage'      => 'https://github.com/' . self::REPO,
+            'author'        => self::AUTHOR,
+            'homepage'      => self::HOMEPAGE,
+            'requires'      => isset($readme['requires']) ? $readme['requires'] : '',
+            'tested'        => isset($readme['tested']) ? $readme['tested'] : '',
+            'requires_php'  => isset($readme['requires_php']) ? $readme['requires_php'] : '',
+            'last_updated'  => isset($release['published_at']) ? $release['published_at'] : '',
             'download_link' => $this->download_url($release),
-            'sections'      => [
-                'description' => 'Maintenance / coming-soon page with session bypass, built for ACSS + Etch setups.',
-                'changelog'   => wpautop(esc_html(isset($release['body']) ? $release['body'] : '')),
-            ],
+            'sections'      => $sections,
         ];
+    }
+
+    /**
+     * Read the plugin's bundled readme.txt (no network), so the "View details" popup
+     * always reflects the installed version and works offline.
+     */
+    protected function get_readme() {
+        if (is_readable(MBTGN_PLUGIN_DIR . 'readme.txt')) {
+            return (string) file_get_contents(MBTGN_PLUGIN_DIR . 'readme.txt');
+        }
+        return '';
+    }
+
+    /**
+     * Minimal WordPress-readme.txt parser: returns header fields plus HTML sections
+     * (description, installation, faq, changelog, screenshots) for plugins_api.
+     */
+    protected function parse_readme($text) {
+        $text = str_replace(["\r\n", "\r"], "\n", (string) $text);
+        $out  = ['sections' => []];
+
+        if (preg_match('/Requires at least:\s*(.+)/i', $text, $m))  { $out['requires']     = trim($m[1]); }
+        if (preg_match('/Tested up to:\s*(.+)/i', $text, $m))       { $out['tested']       = trim($m[1]); }
+        if (preg_match('/Requires PHP:\s*(.+)/i', $text, $m))       { $out['requires_php'] = trim($m[1]); }
+
+        $map = [
+            'description'                => 'description',
+            'installation'               => 'installation',
+            'frequently asked questions' => 'faq',
+            'changelog'                  => 'changelog',
+            'screenshots'                => 'screenshots',
+        ];
+
+        if (preg_match_all('/^==\s*(.+?)\s*==\s*$/m', $text, $mm, PREG_OFFSET_CAPTURE)) {
+            $count = count($mm[0]);
+            for ($i = 0; $i < $count; $i++) {
+                $title = strtolower(trim($mm[1][$i][0]));
+                if (!isset($map[$title])) {
+                    continue;
+                }
+                $start = $mm[0][$i][1] + strlen($mm[0][$i][0]);
+                $end   = ($i + 1 < $count) ? $mm[0][$i + 1][1] : strlen($text);
+                $body  = trim(substr($text, $start, $end - $start));
+                $out['sections'][$map[$title]] = $this->format_section($body);
+            }
+        }
+
+        return $out;
+    }
+
+    protected function format_section($body) {
+        $lines  = explode("\n", $body);
+        $html   = '';
+        $inList = false;
+        $para   = [];
+
+        $flush_para = function () use (&$para, &$html) {
+            if ($para) {
+                $html .= '<p>' . $this->inline(implode(' ', $para)) . '</p>';
+                $para = [];
+            }
+        };
+        $close_list = function () use (&$inList, &$html) {
+            if ($inList) {
+                $html   .= '</ul>';
+                $inList  = false;
+            }
+        };
+
+        foreach ($lines as $line) {
+            $t = trim($line);
+            if ($t === '') {
+                $flush_para();
+                $close_list();
+                continue;
+            }
+            if (preg_match('/^=\s*(.+?)\s*=$/', $t, $m)) {
+                $flush_para();
+                $close_list();
+                $html .= '<h4>' . esc_html($m[1]) . '</h4>';
+                continue;
+            }
+            if (preg_match('/^(?:\*|\d+\.)\s+(.*)$/', $t, $m)) {
+                $flush_para();
+                if (!$inList) {
+                    $html  .= '<ul>';
+                    $inList = true;
+                }
+                $html .= '<li>' . $this->inline($m[1]) . '</li>';
+                continue;
+            }
+            $para[] = $t;
+        }
+        $flush_para();
+        $close_list();
+
+        return $html;
+    }
+
+    protected function inline($s) {
+        $s = esc_html($s);
+        $s = preg_replace('/`([^`]+)`/', '<code>$1</code>', $s);
+        $s = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $s);
+        return $s;
     }
 
     /**

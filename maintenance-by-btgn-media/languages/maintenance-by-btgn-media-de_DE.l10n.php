@@ -1,7 +1,7 @@
 <?php
 // German translations for "Maintenance by #btgn.media" (WP >= 6.5 PHP translation file).
 return [
-    'project-id-version' => 'Maintenance by #btgn.media 2.1.0',
+    'project-id-version' => 'Maintenance by #btgn.media 2.2.0',
     'domain'             => 'maintenance-by-btgn-media',
     'language'           => 'de_DE',
     'plural-forms'       => 'nplurals=2; plural=(n != 1);',

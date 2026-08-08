@@ -4,7 +4,7 @@ Tags: maintenance, coming soon, maintenance mode, preview, bypass
 Requires at least: 6.5
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -44,4 +44,15 @@ Any of them. The "Existing page" mode renders the selected page through the norm
 = Can I hide the theme header and footer on the selected page? =
 
 Yes. Two switches let you hide the header and/or footer via CSS. The defaults target the semantic `<header>`/`<footer>` elements; custom selectors are available under "Advanced" if your markup differs.
+
+== Changelog ==
+
+= 2.2.0 =
+* The "View details" popup now shows a full changelog and info tabs.
+
+= 2.1.0 =
+* Session bypass via a per-project URL parameter and cookie (share a preview link with clients, no login).
+* Maintenance (HTTP 503) or Coming Soon (HTTP 200), with `noindex` for visitors.
+* Two display modes: custom HTML/CSS, or any existing page (any builder) with optional header/footer switches.
+* Self-updating via GitHub, bilingual UI (English/German), and full data cleanup on uninstall.
 
