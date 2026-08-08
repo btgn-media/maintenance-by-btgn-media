@@ -2,7 +2,7 @@
 Contributors: btgnmedia
 Tags: maintenance, coming soon, maintenance mode, preview, bypass
 Requires at least: 6.5
-Tested up to: 6.6
+Tested up to: 7.0.3
 Requires PHP: 7.4
 Stable tag: 2.2.0
 License: GPLv2 or later
