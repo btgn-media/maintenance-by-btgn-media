@@ -2,7 +2,7 @@
 
 A WordPress plugin for a maintenance or coming-soon page with a per-project **session
 bypass** via URL parameter and cookie. Show a custom HTML/CSS page or any existing
-page you've built — works with any page builder or theme.
+page you've built. Works with any page builder or theme.
 
 By **[btgn.media](https://btgn.media)** · `#btgn.media`
 
@@ -10,13 +10,13 @@ By **[btgn.media](https://btgn.media)** · `#btgn.media`
 
 - **Selectable type:** Maintenance (HTTP 503) or Coming Soon (HTTP 200).
 - **Session bypass:** A freely definable URL parameter (per project). Visiting
-  `https://example.com/?your-parameter` sets a signed session cookie — that visitor
+  `https://example.com/?your-parameter` sets a signed session cookie, so that visitor
   sees the full website until the browser is closed. Perfect for sharing a preview
   link with a client, no login required.
 - **Two display modes:**
   1. Custom HTML & CSS (loads the site's styles, so utility frameworks like ACSS work).
-  2. Any existing page — built with any builder (Etch, Bricks, Elementor, Gutenberg …)
-     — with optional switches to hide the theme header and/or footer.
+  2. Any existing page, built with any builder (Etch, Bricks, Elementor, Gutenberg, etc.),
+     with optional switches to hide the theme header and/or footer.
 - **SEO-safe:** `noindex,nofollow` for visitors without the bypass.
 - **Bilingual UI:** English (base) and German (including formal/AT/CH variants).
 - **Self-updating:** Pulls new versions straight from GitHub Releases.

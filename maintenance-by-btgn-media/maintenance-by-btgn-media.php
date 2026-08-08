@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Maintenance by #btgn.media
- * Description: Maintenance or coming-soon page with a per-project session bypass via URL parameter & cookie. Show custom HTML/CSS or any existing page — works with any builder or theme.
+ * Description: Maintenance or coming-soon page with a per-project session bypass via URL parameter & cookie. Show custom HTML/CSS or any existing page. Works with any builder or theme.
  * Version: 2.1.0
  * Author: btgn.media
  * Author URI: https://btgn.media
