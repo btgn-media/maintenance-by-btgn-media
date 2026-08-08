@@ -25,6 +25,15 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           SLUG=maintenance-by-btgn-media
+          # Auto-bump "Tested up to" to the latest stable WordPress version, so the
+          # released plugin never triggers the "not tested with your version" notice.
+          WP=$(curl -fsSL https://api.wordpress.org/core/version-check/1.7/ | jq -r '.offers[0].current // empty' || true)
+          if [ -n "$WP" ]; then
+            sed -i "s/^Tested up to:.*/Tested up to: ${WP}/" "$SLUG/readme.txt"
+            echo "Tested up to -> $WP"
+          else
+            echo "Could not fetch latest WordPress version; keeping existing readme value."
+          fi
           mkdir -p releases
           zip -rq "releases/${SLUG}-${VERSION}.zip" "$SLUG" -x '*.DS_Store'
           echo "ASSET=releases/${SLUG}-${VERSION}.zip" >> "$GITHUB_ENV"
