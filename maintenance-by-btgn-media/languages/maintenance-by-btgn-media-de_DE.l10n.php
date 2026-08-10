@@ -1,7 +1,7 @@
 <?php
 // German translations for "Maintenance by #btgn.media" (WP >= 6.5 PHP translation file).
 return [
-    'project-id-version' => 'Maintenance by #btgn.media 2.2.0',
+    'project-id-version' => 'Maintenance by #btgn.media 2.3.0',
     'domain'             => 'maintenance-by-btgn-media',
     'language'           => 'de_DE',
     'plural-forms'       => 'nplurals=2; plural=(n != 1);',
@@ -10,6 +10,15 @@ return [
         '<p>Our website is currently being reworked.<br>Please check back shortly.</p>' => '<p>Unsere Website wird gerade überarbeitet.<br>Schau in Kürze wieder vorbei.</p>',
         'Maintenance Mode' => 'Wartungsmodus',
         'Maintenance mode is active' => 'Der Wartungsmodus ist aktiv',
+        'Maintenance mode scheduled (currently inactive)' => 'Wartungsmodus geplant (aktuell inaktiv)',
+        'Scheduled to start %s.' => 'Geplant ab %s.',
+        'Window ended %s.' => 'Zeitfenster endete %s.',
+        'Active until %s.' => 'Aktiv bis %s.',
+        'Schedule' => 'Zeitplan',
+        'Only show during a time window' => 'Nur in einem Zeitfenster anzeigen',
+        'From' => 'Von',
+        'Until' => 'Bis',
+        'Times use the site timezone (%1$s). Current time: %2$s. Leave a field empty for an open-ended start or end.' => 'Zeiten in der Website-Zeitzone (%1$s). Aktuelle Zeit: %2$s. Lass ein Feld leer für einen offenen Beginn oder ein offenes Ende.',
         'Maintenance mode active' => 'Wartungsmodus aktiv',
         'Copied ✓' => 'Kopiert ✓',
         'Copy link' => 'Link kopieren',

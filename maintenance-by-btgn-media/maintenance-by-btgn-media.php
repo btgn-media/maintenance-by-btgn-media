@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Maintenance by #btgn.media
  * Description: Maintenance or coming-soon page with a per-project session bypass via URL parameter & cookie. Show custom HTML/CSS or any existing page. Works with any builder or theme.
- * Version: 2.2.0
+ * Version: 2.3.0
  * Author: #btgn.media
  * Author URI: https://btgn.media
  * Plugin URI: https://github.com/btgn-media/maintenance-by-btgn-media
@@ -26,7 +26,7 @@ if (defined('MBTGN_VERSION') || class_exists('MBTGN_Settings')) {
     return;
 }
 
-define('MBTGN_VERSION', '2.2.0');
+define('MBTGN_VERSION', '2.3.0');
 define('MBTGN_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('MBTGN_OPTION_KEY', 'mbtgn_settings');
 

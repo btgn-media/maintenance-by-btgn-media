@@ -17,6 +17,9 @@ class MBTGN_Settings {
             'status_code'  => '503',          // 503 = maintenance, 200 = coming soon
             'mode'         => 'html',         // html | etch
             'bypass_param' => 'preview',
+            'schedule_enabled' => 0,          // limit the maintenance page to a time window
+            'start'        => '',             // datetime-local (site timezone), e.g. 2026-08-15T09:00
+            'end'          => '',             // datetime-local (site timezone)
             'etch_page_id' => 0,
             'show_header'    => 1,            // show the theme/Etch header on the rendered page (etch mode)
             'show_footer'    => 1,            // show the theme/Etch footer on the rendered page (etch mode)
@@ -62,6 +65,10 @@ class MBTGN_Settings {
         $param = isset($input['bypass_param']) ? sanitize_key($input['bypass_param']) : '';
         $out['bypass_param'] = $param !== '' ? $param : 'preview';
 
+        $out['schedule_enabled'] = empty($input['schedule_enabled']) ? 0 : 1;
+        $out['start'] = self::sanitize_datetime_local(isset($input['start']) ? $input['start'] : '');
+        $out['end']   = self::sanitize_datetime_local(isset($input['end']) ? $input['end'] : '');
+
         $out['etch_page_id'] = isset($input['etch_page_id']) ? absint($input['etch_page_id']) : 0;
         $out['show_header']     = empty($input['show_header']) ? 0 : 1;
         $out['show_footer']     = empty($input['show_footer']) ? 0 : 1;
@@ -80,6 +87,21 @@ class MBTGN_Settings {
         }
 
         return $out;
+    }
+
+    /**
+     * Accept only "YYYY-MM-DDTHH:MM" (HTML datetime-local); anything else becomes "".
+     */
+    private static function sanitize_datetime_local($value) {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+        // Some browsers include seconds; normalise to minute precision.
+        if (preg_match('/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(:\d{2})?$/', $value, $m)) {
+            return $m[1];
+        }
+        return '';
     }
 
     public static function render_page() {
@@ -142,6 +164,7 @@ class MBTGN_Settings {
                 line-height: 1.5;
             }
             .mbtgn-wrap input[type="text"],
+            .mbtgn-wrap input[type="datetime-local"],
             .mbtgn-wrap select,
             .mbtgn-wrap textarea {
                 width: 100%;
@@ -159,6 +182,7 @@ class MBTGN_Settings {
                 line-height: 1.55;
             }
             .mbtgn-wrap input[type="text"]:focus,
+            .mbtgn-wrap input[type="datetime-local"]:focus,
             .mbtgn-wrap select:focus,
             .mbtgn-wrap textarea:focus {
                 border-color: var(--mbtgn-primary);
@@ -239,6 +263,8 @@ class MBTGN_Settings {
                 width: 8px; height: 8px; flex: none; border-radius: 50%;
                 background: #00a32a;
             }
+            .mbtgn-dot--idle { background: #dba617; }
+            .mbtgn-schedule-note { color: var(--mbtgn-text-soft); font-size: 12px; }
             .mbtgn-wrap p.submit { margin: 0; padding: 0; }
             .mbtgn-advanced { margin-block-start: 1rem; }
             .mbtgn-advanced > summary {
@@ -279,10 +305,40 @@ class MBTGN_Settings {
                 <a class="button button-small" href="<?php echo esc_url(MBTGN_Updater::check_url()); ?>"><?php esc_html_e('Check for updates', 'maintenance-by-btgn-media'); ?></a>
             </p>
 
-            <?php if ($s['enabled']) : ?>
+            <?php
+            if ($s['enabled']) :
+                $state_active  = true;
+                $schedule_note = '';
+                if (!empty($s['schedule_enabled'])) {
+                    list($start, $end) = MBTGN_Frontend::schedule_bounds($s);
+                    $now = current_datetime();
+                    $fmt = get_option('date_format') . ' ' . get_option('time_format');
+                    if ($start && $now < $start) {
+                        $state_active  = false;
+                        /* translators: %s: date/time */
+                        $schedule_note = sprintf(__('Scheduled to start %s.', 'maintenance-by-btgn-media'), wp_date($fmt, $start->getTimestamp()));
+                    } elseif ($end && $now > $end) {
+                        $state_active  = false;
+                        /* translators: %s: date/time */
+                        $schedule_note = sprintf(__('Window ended %s.', 'maintenance-by-btgn-media'), wp_date($fmt, $end->getTimestamp()));
+                    } elseif ($end) {
+                        /* translators: %s: date/time */
+                        $schedule_note = sprintf(__('Active until %s.', 'maintenance-by-btgn-media'), wp_date($fmt, $end->getTimestamp()));
+                    }
+                }
+                ?>
                 <div class="mbtgn-banner">
-                    <span class="mbtgn-dot" aria-hidden="true"></span>
-                    <strong><?php esc_html_e('Maintenance mode is active', 'maintenance-by-btgn-media'); ?></strong>
+                    <span class="mbtgn-dot<?php echo $state_active ? '' : ' mbtgn-dot--idle'; ?>" aria-hidden="true"></span>
+                    <strong>
+                        <?php
+                        echo $state_active
+                            ? esc_html__('Maintenance mode is active', 'maintenance-by-btgn-media')
+                            : esc_html__('Maintenance mode scheduled (currently inactive)', 'maintenance-by-btgn-media');
+                        ?>
+                    </strong>
+                    <?php if ($schedule_note) : ?>
+                        <span class="mbtgn-schedule-note"><?php echo esc_html($schedule_note); ?></span>
+                    <?php endif; ?>
                     <code id="mbtgn-bypass-url"><?php echo esc_html($bypass_url); ?></code>
                     <button type="button" class="button mbtgn-copy" id="mbtgn-copy-btn" data-copied="<?php echo esc_attr__('Copied ✓', 'maintenance-by-btgn-media'); ?>"><?php esc_html_e('Copy link', 'maintenance-by-btgn-media'); ?></button>
                 </div>
@@ -327,6 +383,37 @@ class MBTGN_Settings {
                             ?>
                         </p>
                     </div>
+                </div>
+
+                <div class="mbtgn-card">
+                    <h2><?php esc_html_e('Schedule', 'maintenance-by-btgn-media'); ?></h2>
+                    <div class="mbtgn-field">
+                        <label class="mbtgn-toggle">
+                            <input type="checkbox" name="<?php echo esc_attr($key); ?>[schedule_enabled]" value="1" <?php checked($s['schedule_enabled']); ?>>
+                            <span class="mbtgn-track" aria-hidden="true"></span>
+                            <b><?php esc_html_e('Only show during a time window', 'maintenance-by-btgn-media'); ?></b>
+                        </label>
+                    </div>
+                    <div class="mbtgn-field" style="display:grid;gap:.75rem;grid-template-columns:1fr 1fr;max-width:480px;">
+                        <div>
+                            <label class="mbtgn-label" for="mbtgn_start"><?php esc_html_e('From', 'maintenance-by-btgn-media'); ?></label>
+                            <input type="datetime-local" id="mbtgn_start" name="<?php echo esc_attr($key); ?>[start]" value="<?php echo esc_attr($s['start']); ?>">
+                        </div>
+                        <div>
+                            <label class="mbtgn-label" for="mbtgn_end"><?php esc_html_e('Until', 'maintenance-by-btgn-media'); ?></label>
+                            <input type="datetime-local" id="mbtgn_end" name="<?php echo esc_attr($key); ?>[end]" value="<?php echo esc_attr($s['end']); ?>">
+                        </div>
+                    </div>
+                    <p class="mbtgn-hint">
+                        <?php
+                        printf(
+                            /* translators: 1: timezone name, 2: current local time */
+                            esc_html__('Times use the site timezone (%1$s). Current time: %2$s. Leave a field empty for an open-ended start or end.', 'maintenance-by-btgn-media'),
+                            esc_html(wp_timezone_string()),
+                            esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format')))
+                        );
+                        ?>
+                    </p>
                 </div>
 
                 <div class="mbtgn-card">

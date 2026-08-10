@@ -20,7 +20,46 @@ class MBTGN_Frontend {
     }
 
     private static function is_active() {
-        return !empty(self::settings()['enabled']);
+        $s = self::settings();
+        return !empty($s['enabled']) && self::within_schedule($s);
+    }
+
+    /**
+     * Parse the schedule window into DateTimeImmutable bounds (site timezone).
+     * Returns [start|null, end|null].
+     */
+    public static function schedule_bounds($s) {
+        $tz    = wp_timezone();
+        $start = null;
+        $end   = null;
+        if (!empty($s['start'])) {
+            $d = DateTimeImmutable::createFromFormat('Y-m-d\TH:i', $s['start'], $tz);
+            $start = $d ?: null;
+        }
+        if (!empty($s['end'])) {
+            $d = DateTimeImmutable::createFromFormat('Y-m-d\TH:i', $s['end'], $tz);
+            $end = $d ?: null;
+        }
+        return [$start, $end];
+    }
+
+    /**
+     * When scheduling is enabled, the maintenance page only shows within the window.
+     * Empty start or end means an open-ended bound.
+     */
+    private static function within_schedule($s) {
+        if (empty($s['schedule_enabled'])) {
+            return true;
+        }
+        list($start, $end) = self::schedule_bounds($s);
+        $now = current_datetime();
+        if ($start && $now < $start) {
+            return false;
+        }
+        if ($end && $now > $end) {
+            return false;
+        }
+        return true;
     }
 
     /**

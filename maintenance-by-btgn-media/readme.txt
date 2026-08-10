@@ -4,7 +4,7 @@ Tags: maintenance, coming soon, maintenance mode, preview, bypass
 Requires at least: 6.5
 Tested up to: 7.0.3
 Requires PHP: 7.4
-Stable tag: 2.2.0
+Stable tag: 2.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,9 @@ Any of them. The "Existing page" mode renders the selected page through the norm
 Yes. Two switches let you hide the header and/or footer via CSS. The defaults target the semantic `<header>`/`<footer>` elements; custom selectors are available under "Advanced" if your markup differs.
 
 == Changelog ==
+
+= 2.3.0 =
+* Optional schedule: show the maintenance page only within a from/until time window (site timezone).
 
 = 2.2.0 =
 * The "View details" popup now shows a full changelog and info tabs.
